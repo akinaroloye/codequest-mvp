@@ -23,7 +23,7 @@ export interface User {
   streakCurrent: number;
   streakLongest: number;
   streakLastActivity: string | null;   // ISO date string
-  streakShieldsbanked: number;
+  streakShieldsBanked: number;
   preferredLanguage: string;
   timezone: string;
 }
@@ -119,7 +119,7 @@ export interface StreakDay {
 export interface StreakSummary {
   current: number;
   longest: number;
-  shieldsbanked: number;
+  shieldsBanked: number;
   lastActivity: string | null;
   recentDays: StreakDay[];
 }

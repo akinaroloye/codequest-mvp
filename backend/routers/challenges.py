@@ -2,7 +2,8 @@ from datetime import date
 from uuid import UUID
 from typing import Literal
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +16,12 @@ router = APIRouter()
 
 
 class ChallengeOut(BaseModel):
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
+
     id: UUID
     slug: str
     title: str
@@ -27,15 +34,12 @@ class ChallengeOut(BaseModel):
     tags: list[str]
     is_daily: bool
 
-    class Config:
-        from_attributes = True
-
 
 class ChallengeDetailOut(ChallengeOut):
     content: dict
 
 
-@router.get("/daily", response_model=ChallengeDetailOut)
+@router.get("/daily", response_model=ChallengeDetailOut, response_model_by_alias=True)
 async def get_daily_challenge(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
@@ -58,7 +62,7 @@ async def get_daily_challenge(
     return challenge
 
 
-@router.get("/", response_model=list[ChallengeOut])
+@router.get("/", response_model=list[ChallengeOut], response_model_by_alias=True)
 async def list_challenges(
     language: str | None = Query(None),
     difficulty: Literal["rookie", "junior", "mid", "senior", "staff"] | None = Query(None),
@@ -80,7 +84,7 @@ async def list_challenges(
     return result.scalars().all()
 
 
-@router.get("/{challenge_id}", response_model=ChallengeDetailOut)
+@router.get("/{challenge_id}", response_model=ChallengeDetailOut, response_model_by_alias=True)
 async def get_challenge(
     challenge_id: UUID,
     db: AsyncSession = Depends(get_db),

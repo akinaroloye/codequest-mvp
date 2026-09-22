@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import engine, Base
-from routers import challenges, progress, streak, auth
+from routers import challenges, progress, streak, auth, leaderboard
 
 
 @asynccontextmanager
@@ -19,6 +19,7 @@ app = FastAPI(
     version="0.1.0",
     description="Backend for the CodeQuest — Duolingo for Coders mobile app",
     lifespan=lifespan,
+    redirect_slashes=False,
 )
 
 app.add_middleware(
@@ -33,6 +34,7 @@ app.include_router(auth.router,        prefix="/auth",       tags=["auth"])
 app.include_router(challenges.router,  prefix="/challenges",  tags=["challenges"])
 app.include_router(progress.router,    prefix="/progress",    tags=["progress"])
 app.include_router(streak.router,      prefix="/streak",      tags=["streak"])
+app.include_router(leaderboard.router, prefix="/leaderboard",  tags=["leaderboard"])
 
 
 @app.get("/health")

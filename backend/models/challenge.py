@@ -1,9 +1,18 @@
 import uuid
 from datetime import date, datetime
-from sqlalchemy import Boolean, Date, DateTime, Integer, String, Text, func
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
+from sqlalchemy import Boolean, Date, DateTime, Integer, Text, func
+from sqlalchemy.dialects.postgresql import ARRAY, ENUM as PgEnum, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from database import Base
+
+_challenge_type = PgEnum(
+    "syntax_completion", "debugging", "output_prediction", "performance_tradeoff", "trace_execution",
+    name="challenge_type", create_type=False,
+)
+_difficulty_level = PgEnum(
+    "rookie", "junior", "mid", "senior", "staff",
+    name="difficulty_level", create_type=False,
+)
 
 
 class Challenge(Base):
@@ -12,9 +21,9 @@ class Challenge(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     slug: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)
-    type: Mapped[str] = mapped_column(Text, nullable=False)
+    type: Mapped[str] = mapped_column(_challenge_type, nullable=False)
     language: Mapped[str] = mapped_column(Text, nullable=False, default="python")
-    difficulty: Mapped[str] = mapped_column(Text, nullable=False, default="junior")
+    difficulty: Mapped[str] = mapped_column(_difficulty_level, nullable=False, default="junior")
     xp_reward: Mapped[int] = mapped_column(Integer, nullable=False, default=10)
     gem_reward: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     time_limit_secs: Mapped[int] = mapped_column(Integer, nullable=False, default=300)

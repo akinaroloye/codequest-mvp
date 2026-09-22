@@ -1,49 +1,58 @@
 import { create } from 'zustand';
-import { MMKV } from 'react-native-mmkv';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { User } from '../types';
 
-const storage = new MMKV({ id: 'codequest-user' });
+const TOKEN_KEY = 'cq_token';
+const USER_KEY = 'cq_user';
 
 interface UserStore {
   token: string | null;
   user: User | null;
+  hydrated: boolean;
+  hydrate: () => Promise<void>;
   setToken: (token: string) => void;
   setUser: (user: User) => void;
   patchUser: (patch: Partial<User>) => void;
   logout: () => void;
 }
 
-const loadToken = () => storage.getString('token') ?? null;
-const loadUser = (): User | null => {
-  const raw = storage.getString('user');
-  return raw ? (JSON.parse(raw) as User) : null;
-};
+export const useUserStore = create<UserStore>((set, get) => ({
+  token: null,
+  user: null,
+  hydrated: false,
 
-export const useUserStore = create<UserStore>((set) => ({
-  token: loadToken(),
-  user: loadUser(),
+  hydrate: async () => {
+    const [token, userRaw] = await Promise.all([
+      AsyncStorage.getItem(TOKEN_KEY),
+      AsyncStorage.getItem(USER_KEY),
+    ]);
+    set({
+      token: token ?? null,
+      user: userRaw ? (JSON.parse(userRaw) as User) : null,
+      hydrated: true,
+    });
+  },
 
   setToken: (token) => {
-    storage.set('token', token);
+    AsyncStorage.setItem(TOKEN_KEY, token);
     set({ token });
   },
 
   setUser: (user) => {
-    storage.set('user', JSON.stringify(user));
+    AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
     set({ user });
   },
 
-  patchUser: (patch) =>
-    set((state) => {
-      if (!state.user) return state;
-      const updated = { ...state.user, ...patch };
-      storage.set('user', JSON.stringify(updated));
-      return { user: updated };
-    }),
+  patchUser: (patch) => {
+    const current = get().user;
+    if (!current) return;
+    const updated = { ...current, ...patch };
+    AsyncStorage.setItem(USER_KEY, JSON.stringify(updated));
+    set({ user: updated });
+  },
 
   logout: () => {
-    storage.delete('token');
-    storage.delete('user');
+    AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
     set({ token: null, user: null });
   },
 }));

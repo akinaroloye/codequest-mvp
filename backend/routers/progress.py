@@ -8,7 +8,8 @@ from uuid import UUID
 
 import pytz
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,6 +36,8 @@ class SubmitRequest(BaseModel):
 
 
 class SubmitResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     correct: bool
     score: float
     xp_earned: int
@@ -46,7 +49,7 @@ class SubmitResponse(BaseModel):
     level: int
 
 
-@router.post("/submit", response_model=SubmitResponse)
+@router.post("/submit", response_model=SubmitResponse, response_model_by_alias=True)
 async def submit_challenge(
     req: SubmitRequest,
     current_user: User = Depends(get_current_user),
@@ -86,6 +89,10 @@ async def submit_challenge(
     if result.correct:
         progress.status = "completed"
         progress.completed_at = datetime.now(timezone.utc)
+    else:
+        progress.hearts_used = (progress.hearts_used or 0) + 1
+        if current_user.hearts > 0:
+            current_user.hearts -= 1
     if progress.best_score is None or result.score > progress.best_score:
         progress.best_score = result.score
     progress.time_taken_ms = req.time_taken_ms

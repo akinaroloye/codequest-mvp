@@ -1,12 +1,18 @@
 import axios from 'axios';
 import { useUserStore } from '../store/useUserStore';
-import type { Challenge, SubmitResponse, StreakSummary, User } from '../types';
+import type { Challenge, SubmitResponse, StreakSummary } from '../types';
+
+declare const __DEV__: boolean;
 
 const BASE_URL = __DEV__
-  ? 'http://localhost:8000'
-  : 'https://api.codequest.app';   // replace with your prod domain
+  ? 'https://real-ads-drive.loca.lt'
+  : 'https://api.codequest.app';
 
-export const apiClient = axios.create({ baseURL: BASE_URL, timeout: 10_000 });
+export const apiClient = axios.create({
+  baseURL: BASE_URL,
+  timeout: 10_000,
+  headers: { 'bypass-tunnel-reminder': 'true' },
+});
 
 apiClient.interceptors.request.use((config) => {
   const token = useUserStore.getState().token;
@@ -32,6 +38,11 @@ export const authApi = {
     );
     return data.access_token;
   },
+
+  me: async () => {
+    const { data } = await apiClient.get('/auth/me');
+    return data;
+  },
 };
 
 // ─── Challenges ───────────────────────────────────────────────────────────────
@@ -49,7 +60,7 @@ export const challengeApi = {
     limit?: number;
     offset?: number;
   }): Promise<Challenge[]> => {
-    const { data } = await apiClient.get('/challenges', { params });
+    const { data } = await apiClient.get('/challenges/', { params });
     return data;
   },
 
@@ -73,6 +84,18 @@ export const progressApi = {
       time_taken_ms: payload.timeTakenMs,
     });
     return data;
+  },
+};
+
+// ─── Leaderboard ──────────────────────────────────────────────────────────────
+
+export const leaderboardApi = {
+  getTop: async () => {
+    const { data } = await apiClient.get('/leaderboard/top');
+    return data as Array<{
+      rank: number; userId: string; username: string;
+      xpTotal: number; level: number; streakCurrent: number; isMe: boolean;
+    }>;
   },
 };
 

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +14,8 @@ router = APIRouter()
 
 
 class StreakSummary(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     current: int
     longest: int
     shields_banked: int
@@ -21,11 +24,13 @@ class StreakSummary(BaseModel):
 
 
 class PurchaseShieldResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     shields_banked: int
     gems_remaining: int
 
 
-@router.get("/me", response_model=StreakSummary)
+@router.get("/me", response_model=StreakSummary, response_model_by_alias=True)
 async def get_my_streak(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -46,21 +51,21 @@ async def get_my_streak(
         recent_days=[
             {
                 "date": str(log.activity_date),
-                "xp_earned": log.xp_earned,
-                "challenges_completed": log.challenges_completed,
-                "shield_consumed": log.shield_consumed,
+                "xpEarned": log.xp_earned,
+                "challengesCompleted": log.challenges_completed,
+                "shieldConsumed": log.shield_consumed,
             }
             for log in logs
         ],
     )
 
 
-@router.post("/purchase-shield", response_model=PurchaseShieldResponse)
+@router.post("/purchase-shield", response_model=PurchaseShieldResponse, response_model_by_alias=True)
 async def purchase_shield(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    if current_user.shields_banked >= settings.streak_shield_max_banked:
+    if current_user.streak_shields_banked >= settings.streak_shield_max_banked:
         raise HTTPException(status_code=400, detail="Maximum shields already banked")
     if current_user.gems < settings.streak_shield_cost_gems:
         raise HTTPException(status_code=402, detail="Insufficient gems")

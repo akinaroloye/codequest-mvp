@@ -1,8 +1,9 @@
+import bcrypt
+import hashlib
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -12,7 +13,6 @@ from models.user import User
 from config import settings
 
 router = APIRouter()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
@@ -29,12 +29,16 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+def _prehash(password: str) -> bytes:
+    return hashlib.sha256(password.encode()).hexdigest().encode()
+
+
 def _hash(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(_prehash(password), bcrypt.gensalt()).decode()
 
 
 def _verify(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return bcrypt.checkpw(_prehash(plain), hashed.encode())
 
 
 def _create_token(user_id: str) -> str:
@@ -72,6 +76,26 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(user)
     return TokenResponse(access_token=_create_token(str(user.id)))
+
+
+@router.get("/me")
+async def get_me(current_user: User = Depends(get_current_user)):
+    return {
+        "id": str(current_user.id),
+        "email": current_user.email,
+        "username": current_user.username,
+        "avatarSeed": current_user.avatar_seed,
+        "xpTotal": current_user.xp_total,
+        "level": current_user.level,
+        "gems": current_user.gems,
+        "hearts": current_user.hearts,
+        "streakCurrent": current_user.streak_current,
+        "streakLongest": current_user.streak_longest,
+        "streakLastActivity": str(current_user.streak_last_activity) if current_user.streak_last_activity else None,
+        "streakShieldsBanked": current_user.streak_shields_banked,
+        "preferredLanguage": current_user.preferred_language,
+        "timezone": current_user.timezone,
+    }
 
 
 @router.post("/token", response_model=TokenResponse)

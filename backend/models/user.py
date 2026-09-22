@@ -34,7 +34,6 @@ class User(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     progress: Mapped[list["UserChallengeProgress"]] = relationship(back_populates="user", lazy="select")  # noqa: F821
-    achievements: Mapped[list["Achievement"]] = relationship(back_populates="user", lazy="select")  # noqa: F821
 
     __table_args__ = (
         CheckConstraint("xp_total >= 0"),

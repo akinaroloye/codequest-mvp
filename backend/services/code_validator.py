@@ -33,10 +33,6 @@ class ValidationResult:
 
 
 def validate_syntax_completion(content: dict, submission: dict) -> ValidationResult:
-    """
-    content.blanks: [{"id": 0, "solutions": ["x % 2 == 0", "not x % 2"]}]
-    submission.answers: {0: "x % 2 == 0"}
-    """
     blanks: list[dict] = content["blanks"]
     answers: dict[str, str] = {str(k): v.strip() for k, v in submission.get("answers", {}).items()}
 
@@ -61,20 +57,19 @@ def validate_syntax_completion(content: dict, submission: dict) -> ValidationRes
 
 
 def validate_debugging(content: dict, submission: dict) -> ValidationResult:
-    correct_code: str = content["correct_code"]
+    correct_code: str = content.get("correctCode") or content.get("correct_code", "")
     submitted_code: str = submission.get("code", "")
 
     if _tokens_match(submitted_code, [correct_code]):
         return ValidationResult(correct=True, score=100.0, explanation="Bug fixed correctly.", hint=None)
 
-    # Partial credit: if submitted code parses as valid Python, award 30 points
     try:
         ast.parse(submitted_code)
         return ValidationResult(
             correct=False,
             score=30.0,
             explanation="Code is syntactically valid but does not match the expected fix.",
-            hint=content.get("bug_hint"),
+            hint=content.get("bugHint") or content.get("bug_hint"),
         )
     except SyntaxError as e:
         return ValidationResult(
@@ -86,8 +81,7 @@ def validate_debugging(content: dict, submission: dict) -> ValidationResult:
 
 
 def validate_mcq(content: dict, submission: dict) -> ValidationResult:
-    """For output_prediction and performance_tradeoff."""
-    correct_idx: int = content["correct_index"]
+    correct_idx: int = content.get("correctIndex") if content.get("correctIndex") is not None else content["correct_index"]
     submitted_idx: int | None = submission.get("selected_index")
 
     if submitted_idx == correct_idx:
@@ -103,7 +97,7 @@ def validate_mcq(content: dict, submission: dict) -> ValidationResult:
 
 
 def validate_trace_execution(content: dict, submission: dict) -> ValidationResult:
-    expected: dict[str, Any] = content["expected_state"]
+    expected: dict[str, Any] = content.get("expectedState") or content.get("expected_state", {})
     submitted: dict[str, Any] = submission.get("final_state", {})
 
     matches = sum(1 for k, v in expected.items() if submitted.get(str(k)) == v)

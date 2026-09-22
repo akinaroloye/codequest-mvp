@@ -1,13 +1,13 @@
 import React from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
-import { colors, spacing, radius, typography } from '../theme';
+import { colors, font, space, radius } from '../theme';
 import type { Challenge } from '../types';
 
 const TYPE_LABELS: Record<string, string> = {
-  syntax_completion:    'Fill Blank',
-  debugging:            'Debug',
-  output_prediction:    'Predict Output',
-  performance_tradeoff: 'Perf Trade-off',
+  syntax_completion:    'Fill blank',
+  debugging:            'Debugging',
+  output_prediction:    'Predict output',
+  performance_tradeoff: 'Performance',
   trace_execution:      'Trace',
 };
 
@@ -18,31 +18,38 @@ interface Props {
 }
 
 export function ChallengeCard({ challenge, onPress, completed = false }: Props) {
-  const diffColor = colors.difficultyColor[challenge.difficulty] ?? colors.textSecondary;
+  const diffColor = colors.difficultyColor[challenge.difficulty] ?? colors.textSub;
 
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressed, completed && styles.completed]}
       onPress={() => onPress(challenge)}
+      accessibilityRole="button"
+      accessibilityLabel={`${challenge.title}, ${challenge.difficulty} ${challenge.type}`}
     >
       <View style={styles.topRow}>
-        <View style={[styles.typePill, { backgroundColor: colors.accentGlow }]}>
-          <Text style={styles.typeLabel}>{TYPE_LABELS[challenge.type] ?? challenge.type}</Text>
+        <Text style={styles.typeLabel}>{TYPE_LABELS[challenge.type] ?? challenge.type}</Text>
+        <View style={styles.metaRight}>
+          {challenge.isDaily && (
+            <View style={styles.dailyPill}>
+              <Text style={styles.dailyText}>Today</Text>
+            </View>
+          )}
+          {completed && (
+            <View style={styles.completedPill}>
+              <Text style={styles.completedText}>Done</Text>
+            </View>
+          )}
         </View>
-        {challenge.isDaily && (
-          <View style={[styles.typePill, { backgroundColor: 'rgba(168,139,250,0.15)' }]}>
-            <Text style={[styles.typeLabel, { color: colors.gem }]}>DAILY</Text>
-          </View>
-        )}
-        {completed && <Text style={styles.checkmark}>✓</Text>}
       </View>
 
       <Text style={styles.title} numberOfLines={2}>{challenge.title}</Text>
 
       <View style={styles.bottomRow}>
         <Text style={[styles.difficulty, { color: diffColor }]}>
-          {challenge.difficulty.toUpperCase()}
+          {challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1)}
         </Text>
+        <Text style={styles.dot}>·</Text>
         <Text style={styles.lang}>{challenge.language}</Text>
         <Text style={styles.xp}>+{challenge.xpReward} XP</Text>
       </View>
@@ -52,41 +59,68 @@ export function ChallengeCard({ challenge, onPress, completed = false }: Props) 
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: space[4],
+    marginBottom: space[2],
+    gap: space[2],
   },
-  pressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
-  completed: { borderColor: colors.success, opacity: 0.65 },
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  typePill: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: radius.pill,
+  pressed: { opacity: 0.7, transform: [{ scale: 0.985 }] },
+  completed: { opacity: 0.5 },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   typeLabel: {
-    color: colors.accent,
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.semibold as any,
-    letterSpacing: 0.5,
+    color: colors.textMuted,
+    fontSize: font.size.caption,
+    fontWeight: font.weight.medium,
   },
-  checkmark: { color: colors.success, fontSize: 14, marginLeft: 'auto' },
+  metaRight: { flexDirection: 'row', gap: space[1], alignItems: 'center' },
+  dailyPill: {
+    backgroundColor: colors.warningSub,
+    borderRadius: radius.xs,
+    paddingHorizontal: space[2],
+    paddingVertical: 2,
+  },
+  dailyText: {
+    color: colors.warning,
+    fontSize: font.size.caption,
+    fontWeight: font.weight.semibold,
+  },
+  completedPill: {
+    backgroundColor: colors.successSub,
+    borderRadius: radius.xs,
+    paddingHorizontal: space[2],
+    paddingVertical: 2,
+  },
+  completedText: {
+    color: colors.success,
+    fontSize: font.size.caption,
+    fontWeight: font.weight.semibold,
+  },
   title: {
     color: colors.text,
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold as any,
+    fontSize: font.size.body,
+    fontWeight: font.weight.semibold,
+    lineHeight: 22,
   },
-  bottomRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  difficulty: { fontSize: typography.sizes.xs, fontWeight: typography.weights.bold as any },
-  lang: { color: colors.textSecondary, fontSize: typography.sizes.xs },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space[2],
+  },
+  difficulty: {
+    fontSize: font.size.caption,
+    fontWeight: font.weight.semibold,
+  },
+  dot: { color: colors.textMuted, fontSize: font.size.caption },
+  lang: { color: colors.textSub, fontSize: font.size.caption },
   xp: {
     color: colors.xp,
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.semibold as any,
+    fontSize: font.size.caption,
+    fontWeight: font.weight.semibold,
     marginLeft: 'auto',
   },
 });

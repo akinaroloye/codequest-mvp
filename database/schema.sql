@@ -33,6 +33,7 @@ CREATE TABLE users (
   id                     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email                  TEXT UNIQUE NOT NULL,
   username               TEXT UNIQUE NOT NULL,
+  password_hash          TEXT NOT NULL DEFAULT '',
   avatar_seed            TEXT NOT NULL DEFAULT 'default',
   xp_total               INTEGER NOT NULL DEFAULT 0 CHECK (xp_total >= 0),
   level                  INTEGER NOT NULL DEFAULT 1 CHECK (level >= 1),
